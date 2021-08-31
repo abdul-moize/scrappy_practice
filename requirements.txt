@@ -1,0 +1,5 @@
+Scrapy==2.5.0
+pylint==2.10.2
+flake8==3.9.2
+black==21.8b0
+isort==5.9.3
