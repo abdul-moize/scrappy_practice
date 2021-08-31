@@ -28,23 +28,23 @@ class PakistanStoresSpider(scrapy.Spider):
         """
         last_page = response.css('a.page-link.navigate::attr(data-href)')[-1].get()
         last_page_number = int(last_page[last_page.find("=") + 1:])
+        product_containers = response.css('li.col-md-3.col-md-3.col-sm-6.col-xs-6 a')
+        for product_container in product_containers:
+            name = product_container.attrib['title']
+            url = response.urljoin(product_container.attrib['href'])
+            img_url = product_container.css('img.lazyload').attrib['data-src']
+            price = product_container.css('div.primary-color.price::text').get()[0:-1]
+            product = {
+                'name': name,
+                'link': url,
+                'img_link': response.urljoin(img_url),
+                'price': price
+            }
+            self.products.append(product)
+        self.current_page += 1
         if self.current_page <= last_page_number:
             next_page_url = response.urljoin(f"?page={self.current_page}")
             yield scrapy.Request(url=next_page_url, callback=self.parse)
-            product_containers = response.css('li.col-md-3.col-md-3.col-sm-6.col-xs-6 a')
-            for product_container in product_containers:
-                name = product_container.attrib['title']
-                url = response.urljoin(product_container.attrib['href'])
-                img_url = product_container.css('img.lazyload').attrib['data-src']
-                price = product_container.css('div.primary-color.price::text').get()[0:-1]
-                product = {
-                    'name': name,
-                    'link': url,
-                    'img_link': response.urljoin(img_url),
-                    'price': price
-                }
-                self.products.append(product)
-            self.current_page += 1
         else:
             for product in self.products:
                 link = product['link']
