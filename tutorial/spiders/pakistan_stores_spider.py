@@ -1,22 +1,27 @@
+"""
+This module contains a spider of pakistanistores.com site
+that crawls and extracts data
+"""
 import json
+from functools import partial
 
 import scrapy
-from functools import partial
 
 
 class PakistanStoresSpider(scrapy.Spider):
     """
     This class crawls the site pakistanistores.com and extracts data
     """
+
     name = "pakistan_stores"
     start_urls = [
-        'https://pakistanistores.com/prices/home-appliances/led-tv-prices',
+        "https://pakistanistores.com/prices/home-appliances/led-tv-prices",
     ]
     current_page = 1
     products = []
     processed_products = 0
 
-    def parse(self, response):
+    def parse(self, response, **kwargs):
         """
         This function crawls through each page and extracts all product information
         Args:
@@ -25,20 +30,21 @@ class PakistanStoresSpider(scrapy.Spider):
             (Any or None):  A request to another page
                             Or
                             None if everything processed
+                            :param **kwargs:
         """
-        last_page = response.css('a.page-link.navigate::attr(data-href)')[-1].get()
-        last_page_number = int(last_page[last_page.find("=") + 1:])
-        product_containers = response.css('li.col-md-3.col-md-3.col-sm-6.col-xs-6 a')
+        last_page = response.css("a.page-link.navigate::attr(data-href)")[-1].get()
+        last_page_number = int(last_page[last_page.find("=") + 1 :])
+        product_containers = response.css("li.col-md-3.col-md-3.col-sm-6.col-xs-6 a")
         for product_container in product_containers:
-            name = product_container.attrib['title']
-            url = response.urljoin(product_container.attrib['href'])
-            img_url = product_container.css('img.lazyload').attrib['data-src']
-            price = product_container.css('div.primary-color.price::text').get()[0:-1]
+            name = product_container.attrib["title"]
+            url = response.urljoin(product_container.attrib["href"])
+            img_url = product_container.css("img.lazyload").attrib["data-src"]
+            price = product_container.css("div.primary-color.price::text").get()[0:-1]
             product = {
-                'name': name,
-                'link': url,
-                'img_link': response.urljoin(img_url),
-                'price': price
+                "name": name,
+                "link": url,
+                "img_link": response.urljoin(img_url),
+                "price": price,
             }
             self.products.append(product)
         self.current_page += 1
@@ -47,10 +53,10 @@ class PakistanStoresSpider(scrapy.Spider):
             yield scrapy.Request(url=next_page_url, callback=self.parse)
         else:
             for product in self.products:
-                link = product['link']
+                link = product["link"]
                 binded_f = partial(self.extract_description, product)
-                product['description'] = ""
-                if link.__contains__('/product/'):
+                product["description"] = ""
+                if link.__contains__("/product/"):
                     self.increment_and_check()
                 else:
                     yield scrapy.Request(url=link, callback=binded_f)
@@ -66,8 +72,8 @@ class PakistanStoresSpider(scrapy.Spider):
             None
         """
         index = self.products.index(product)
-        description = response.css('div.light p::text')[-1].get()[1:-1]
-        product['description'] = description
+        description = response.css("div.light p::text")[-1].get()[1:-1]
+        product["description"] = description
         self.products[index] = product
         self.increment_and_check()
 
@@ -77,7 +83,8 @@ class PakistanStoresSpider(scrapy.Spider):
         Returns:
             None
         """
-        json.dump(self.products, open('products.json', "w"), indent=4)
+        with open("products.json", "w", encoding="UTF-8") as file:
+            json.dump(self.products, file, indent=4)
 
     def increment_and_check(self):
         """
