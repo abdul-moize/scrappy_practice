@@ -14,12 +14,13 @@ class PakistanStoresSpider(scrapy.Spider):
     """
 
     name = "pakistan_stores"
-    start_urls = [
-        "https://pakistanistores.com/prices/home-appliances/led-tv-prices",
-    ]
     current_page = 1
     products = []
     processed_products = 0
+
+    def start_requests(self):
+        url = getattr(self, "url", None)
+        yield scrapy.Request(url, self.parse)
 
     def parse(self, response, **kwargs):
         """
@@ -30,7 +31,6 @@ class PakistanStoresSpider(scrapy.Spider):
             (Any or None):  A request to another page
                             Or
                             None if everything processed
-                            :param **kwargs:
         """
         last_page = response.css("a.page-link.navigate::attr(data-href)")[-1].get()
         last_page_number = int(last_page[last_page.find("=") + 1 :])
